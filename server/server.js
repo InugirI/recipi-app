@@ -8,11 +8,10 @@ const { Pool } = require('pg');
 
 // IMPORTANT: In a real production app, use environment variables for connection strings.
 // e.g., const connectionString = process.env.DATABASE_URL;
-require('dotenv').config();
+const connectionString = 'postgresql://postgres:[YOUR-PASSWORD]@db.ezspcxizarvntwpuwhjg.supabase.co:5432/postgres';
 
-// Connect to PostgreSQL
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString,
 });
 
 // アップロードディレクトリの存在確認と作成
