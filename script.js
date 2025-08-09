@@ -222,19 +222,30 @@ function setupEventListeners() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('ingredients', ingredients);
-    formData.append('category', category);
+    // 画像ファイルがある場合は警告を表示
     if (imageFile) {
-      formData.append('image', imageFile);
+      showStatus('画像アップロードは本番環境では対応していません。', true);
+      return;
     }
-
+    
+    // JSON形式でデータを送信
+    const requestBody = {
+      title,
+      description,
+      ingredients,
+      category
+    };
+    
     const url = editingId ? `/api/recipes/${editingId}` : '/api/recipes';
     const method = editingId ? 'PUT' : 'POST';
 
-    fetch(url, { method, body: formData })
+    fetch(url, { 
+      method,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    })
       .then(() => {
         showStatus(editingId ? 'レシピを更新しました' : 'レシピを追加しました');
         addRecipeForm.style.display = 'none';
