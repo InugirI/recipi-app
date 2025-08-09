@@ -16,7 +16,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-pro"});
 
 // IMPORTANT: In a real production app, use environment variables for connection strings.
 // e.g., const connectionString = process.env.DATABASE_URL;
-const connectionString = 'postgresql://postgres:[YOUR-PASSWORD]@db.ezspcxizarvntwpuwhjg.supabase.co:5432/postgres';
+const connectionString = process.env.DATABASE_URL;
 
 const pool = new Pool({
   connectionString,
@@ -255,12 +255,6 @@ app.post('/api/gemini-suggest', async (req, res) => {
     console.error('Error calling Gemini API:', error);
     res.status(500).json({ message: 'Failed to get suggestion from Gemini API', error: error.message });
   }
-});
-
-
-// --- ルートとサーバー起動 ---
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../index.html'));
 });
 
 
