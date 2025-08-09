@@ -33,28 +33,46 @@ export default async function handler(req, res) {
       });
     }
   } else if (req.method === 'POST') {
-    const { title, description, ingredients, category } = req.body;
-    const ingredientsArray = ingredients ? ingredients.split(',').map(s => s.trim()).filter(s => s) : [];
-
-    if (!title || !description) {
-      return res.status(400).json({ message: 'Title and description are required' });
-    }
-
     try {
+      console.log('POST request body:', req.body);
+      const { title, description, ingredients, category } = req.body;
+      
+      console.log('Parsed fields:', { title, description, ingredients, category });
+      
+      const ingredientsArray = ingredients ? ingredients.split(',').map(s => s.trim()).filter(s => s) : [];
+      console.log('Ingredients array:', ingredientsArray);
+
+      if (!title || !description) {
+        console.log('Validation failed: missing title or description');
+        return res.status(400).json({ message: 'Title and description are required' });
+      }
+
+      console.log('Looking for category:', category || '未分類');
       const catRes = await pool.query('SELECT id FROM categories WHERE name = $1', [category || '未分類']);
+      console.log('Category query result:', catRes.rows);
+      
       if (catRes.rows.length === 0) {
-        return res.status(400).json({ message: 'Invalid category' });
+        console.log('Category not found, available categories:');
+        const allCats = await pool.query('SELECT * FROM categories');
+        console.log('All categories:', allCats.rows);
+        return res.status(400).json({ message: 'Invalid category', availableCategories: allCats.rows });
       }
       const categoryId = catRes.rows[0].id;
 
+      console.log('Inserting recipe with:', { title, description, ingredientsArray, categoryId });
       const result = await pool.query(
         'INSERT INTO recipes (title, description, ingredients, category_id) VALUES ($1, $2, $3, $4) RETURNING *',
         [title, description, ingredientsArray, categoryId]
       );
+      console.log('Recipe created successfully:', result.rows[0]);
       res.status(201).json(result.rows[0]);
     } catch (error) {
-      console.error('Database error:', error);
-      res.status(500).json({ message: 'Failed to create recipe', error: error.message });
+      console.error('Recipe creation error:', error);
+      res.status(500).json({ 
+        message: 'Failed to create recipe', 
+        error: error.message,
+        stack: error.stack 
+      });
     }
   } else {
     res.status(405).json({ message: 'Method not allowed' });
