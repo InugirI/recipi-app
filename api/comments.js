@@ -14,6 +14,24 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  // JSONボディの解析（Vercelサーバーレス関数用）
+  if (req.method === 'POST' && !req.body) {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    await new Promise(resolve => {
+      req.on('end', () => {
+        try {
+          req.body = JSON.parse(body);
+        } catch (e) {
+          req.body = {};
+        }
+        resolve();
+      });
+    });
+  }
+
   const { recipeId } = req.query;
   
   if (!recipeId) {
