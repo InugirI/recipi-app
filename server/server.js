@@ -4,6 +4,16 @@ const PORT = 3000;
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { Pool } = require('pg');
+
+// IMPORTANT: In a real production app, use environment variables for connection strings.
+// e.g., const connectionString = process.env.DATABASE_URL;
+require('dotenv').config();
+
+// Connect to PostgreSQL
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
 // アップロードディレクトリの存在確認と作成
 const uploadsPath = path.join(__dirname, '../uploads');
@@ -24,146 +34,215 @@ const upload = multer({ storage: storage });
 
 // JSONデータを受け取れるようにする
 app.use(express.json());
-app.use(express.static(__dirname + '/../'));
+app.use(express.static(path.join(__dirname, '..'))); // Serve static files from root
 app.use('/uploads', express.static(uploadsPath));
 
-// --- データ（サーバーで管理） ---
-let categories = ["主菜", "副菜", "デザート", "未分類"];
-let recipes = [
-  { title: "カレーライス", description: "スパイシーなカレーです。", ingredients: ["玉ねぎ", "にんじん", "じゃがいも", "カレー粉"], comments: [], likes: 10, category: "主菜" },
-  { title: "オムライス", description: "ふわふわ卵のオムライス。", ingredients: ["卵", "ごはん", "ケチャップ", "鶏肉"], comments: [], likes: 5, category: "主菜" }
-];
 
-// --- レシピ一覧を返すAPI ---
-app.get('/api/recipes', (req, res) => {
-  res.json(recipes); // ← 必ず「配列」を返す
+// --- カテゴリーAPI ---
+app.get('/api/categories', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT name FROM categories ORDER BY position');
+    res.json(result.rows.map(row => row.name));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch categories' });
+  }
 });
 
-// --- 新しいレシピを追加するAPI ---
-app.post('/api/recipes', upload.single('image'), (req, res) => {
+app.put('/api/categories/order', async (req, res) => {
+  const { newOrder } = req.body;
+  if (!Array.isArray(newOrder)) {
+    return res.status(400).json({ message: 'Invalid data' });
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    for (let i = 0; i < newOrder.length; i++) {
+      await client.query('UPDATE categories SET position = $1 WHERE name = $2', [i, newOrder[i]]);
+    }
+    await client.query('COMMIT');
+    res.json({ message: 'Category order updated successfully' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error(error);
+    res.status(500).json({ message: 'Failed to update category order' });
+  } finally {
+    client.release();
+  }
+});
+
+
+// --- レシピAPI ---
+app.get('/api/recipes', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT r.*, c.name as category
+      FROM recipes r
+      LEFT JOIN categories c ON r.category_id = c.id
+      ORDER BY r.id DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch recipes' });
+  }
+});
+
+app.post('/api/recipes', upload.single('image'), async (req, res) => {
   const { title, description, ingredients, category } = req.body;
-  let imageUrl = null;
-  if (req.file) {
-    imageUrl = '/uploads/' + req.file.filename;
-  }
+  const imageUrl = req.file ? '/uploads/' + req.file.filename : null;
   const ingredientsArray = ingredients ? ingredients.split(',').map(s => s.trim()).filter(s => s) : [];
-  if (title && description) {
-    recipes.push({ title, description, ingredients: ingredientsArray, imageUrl, comments: [], likes: 0, category: category || "未分類" });
-    return res.status(201).json({ message: "レシピを追加しました", recipes });
-  } else {
-    return res.status(400).json({ message: "タイトル・説明は必須です" });
+
+  if (!title || !description) {
+    return res.status(400).json({ message: 'Title and description are required' });
+  }
+
+  try {
+    const catRes = await pool.query('SELECT id FROM categories WHERE name = $1', [category || '未分類']);
+    if (catRes.rows.length === 0) {
+      return res.status(400).json({ message: 'Invalid category' });
+    }
+    const categoryId = catRes.rows[0].id;
+
+    const result = await pool.query(
+      'INSERT INTO recipes (title, description, ingredients, image_url, category_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [title, description, ingredientsArray, imageUrl, categoryId]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to create recipe' });
   }
 });
 
-// --- ルートでフロントエンドを返す ---
+app.delete('/api/recipes/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM recipes WHERE id = $1 RETURNING *', [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Recipe not found' });
+    }
+    res.json({ message: 'Recipe deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to delete recipe' });
+  }
+});
+
+app.put('/api/recipes/:id', upload.single('image'), async (req, res) => {
+    const { id } = req.params;
+    const { title, description, ingredients, category } = req.body;
+    const ingredientsArray = ingredients ? ingredients.split(',').map(s => s.trim()).filter(s => s) : [];
+
+    try {
+        let imageUrl = req.file ? '/uploads/' + req.file.filename : undefined;
+        if (imageUrl === undefined) {
+            const oldRecipe = await pool.query('SELECT image_url FROM recipes WHERE id = $1', [id]);
+            if (oldRecipe.rows.length > 0) {
+                imageUrl = oldRecipe.rows[0].image_url;
+            }
+        }
+
+        const catRes = await pool.query('SELECT id FROM categories WHERE name = $1', [category || '未分類']);
+        if (catRes.rows.length === 0) {
+            return res.status(400).json({ message: 'Invalid category' });
+        }
+        const categoryId = catRes.rows[0].id;
+
+        const result = await pool.query(
+            'UPDATE recipes SET title = $1, description = $2, ingredients = $3, image_url = $4, category_id = $5 WHERE id = $6 RETURNING *',
+            [title, description, ingredientsArray, imageUrl, categoryId, id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: 'Recipe not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to update recipe' });
+    }
+});
+
+
+// --- いいねAPI ---
+app.post('/api/recipes/:id/like', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      'UPDATE recipes SET likes = likes + 1 WHERE id = $1 RETURNING likes',
+      [id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Recipe not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to like recipe' });
+  }
+});
+
+app.delete('/api/recipes/:id/like', async (req, res) => {
+    const { id } = req.params;
+    try {
+      const result = await pool.query(
+        'UPDATE recipes SET likes = GREATEST(0, likes - 1) WHERE id = $1 RETURNING likes',
+        [id]
+      );
+      if (result.rowCount === 0) {
+        return res.status(404).json({ message: 'Recipe not found' });
+      }
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Failed to unlike recipe' });
+    }
+});
+
+
+// --- コメントAPI ---
+app.get('/api/recipes/:id/comments', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT *, TO_CHAR(created_at, \'YYYY-MM-DD HH24:MI:SS\') as timestamp FROM comments WHERE recipe_id = $1 ORDER BY created_at DESC', [id]);
+        res.json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Failed to fetch comments' });
+    }
+});
+
+app.post('/api/recipes/:id/comments', async (req, res) => {
+  const { id } = req.params;
+  const { comment } = req.body;
+  if (!comment) {
+    return res.status(400).json({ message: 'Comment text is required' });
+  }
+  try {
+    const result = await pool.query(
+      'INSERT INTO comments (comment, recipe_id) VALUES ($1, $2) RETURNING *',
+      [comment, id]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to add comment' });
+  }
+});
+
+
+// --- ルートとサーバー起動 ---
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../index.html'));
 });
 
-// --- サーバー起動 ---
 app.listen(PORT, () => {
   console.log(`サーバーが http://localhost:${PORT} で起動しました`);
 });
 
-// --- レシピを削除するAPI ---
-// :indexは削除したいレシピの配列番号
-app.delete('/api/recipes/:index', (req, res) => {
-  const index = parseInt(req.params.index, 10);
-  if (!isNaN(index) && index >= 0 && index < recipes.length) {
-    recipes.splice(index, 1);
-    return res.json({ message: "レシピを削除しました", recipes });
-  } else {
-    return res.status(400).json({ message: "無効なインデックスです" });
-  }
-});
-
-// --- レシピを編集するAPI ---
-// :indexは編集したいレシピの配列番号
-app.put('/api/recipes/:index', upload.single('image'), (req, res) => {
-  const index = parseInt(req.params.index, 10);
-  const { title, description, ingredients, category } = req.body;
-  if (isNaN(index) || index < 0 || index >= recipes.length) {
-    return res.status(400).json({ message: "無効なインデックスです" });
-  }
-  if (!title || !description) {
-    return res.status(400).json({ message: "タイトル・説明は必須です" });
-  }
-  
-  let imageUrl = req.file ? '/uploads/' + req.file.filename : recipes[index].imageUrl;
-  const ingredientsArray = ingredients ? ingredients.split(',').map(s => s.trim()).filter(s => s) : [];
-
-  recipes[index] = {
-    ...recipes[index],
-    title,
-    description,
-    ingredients: ingredientsArray,
-    category: category || "未分類",
-    imageUrl
-  };
-  return res.json({ message: "レシピを編集しました", recipe: recipes[index] });
-});
-
-// --- カテゴリーAPI ---
-app.get('/api/categories', (req, res) => {
-  res.json(categories);
-});
-
-app.put('/api/categories/order', (req, res) => {
-  const { newOrder } = req.body;
-  if (Array.isArray(newOrder) && newOrder.length === categories.length && newOrder.every(c => categories.includes(c))) {
-    categories = newOrder;
-    return res.json({ message: "カテゴリーの順序を更新しました", categories });
-  }
-  return res.status(400).json({ message: "無効なデータです" });
-});
-
-// --- いいねAPI ---
-app.post('/api/recipes/:index/like', (req, res) => {
-  const index = parseInt(req.params.index, 10);
-  if (!isNaN(index) && index >= 0 && index < recipes.length) {
-    recipes[index].likes = (recipes[index].likes || 0) + 1;
-    return res.json({ message: "いいねを追加しました", likes: recipes[index].likes });
-  } else {
-    return res.status(400).json({ message: "無効なインデックスです" });
-  }
-});
-
-app.delete('/api/recipes/:index/like', (req, res) => {
-  const index = parseInt(req.params.index, 10);
-  if (!isNaN(index) && index >= 0 && index < recipes.length) {
-    recipes[index].likes = Math.max(0, (recipes[index].likes || 0) - 1);
-    return res.json({ message: "いいねを解除しました", likes: recipes[index].likes });
-  } else {
-    return res.status(400).json({ message: "無効なインデックスです" });
-  }
-});
-
-// --- コメントを投稿するAPI ---
-app.post('/api/recipes/:index/comments', (req, res) => {
-  const index = parseInt(req.params.index, 10);
-  const { comment } = req.body;
-  
-  if (!isNaN(index) && index >= 0 && index < recipes.length && comment) {
-    if (!recipes[index].comments) {
-      recipes[index].comments = [];
-    }
-    
-    const timestamp = new Date().toLocaleString('ja-JP');
-    recipes[index].comments.push({ comment, timestamp });
-    return res.status(201).json({ message: "コメントを投稿しました", comments: recipes[index].comments });
-  } else {
-    return res.status(400).json({ message: "無効なデータです" });
-  }
-});
-
-// --- コメント一覧を取得するAPI ---
-app.get('/api/recipes/:index/comments', (req, res) => {
-  const index = parseInt(req.params.index, 10);
-  
-  if (!isNaN(index) && index >= 0 && index < recipes.length) {
-    const comments = recipes[index].comments || [];
-    return res.json(comments);
-  } else {
-    return res.status(400).json({ message: "無効なインデックスです" });
-  }
+process.on('SIGINT', async () => {
+  await pool.end();
+  console.log('サーバーを終了します');
+  process.exit(0);
 });
