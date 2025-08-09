@@ -228,7 +228,7 @@ app.post('/api/recipes/:id/comments', async (req, res) => {
   }
   try {
     const result = await pool.query(
-      'INSERT INTO comments (comment, recipe_id) VALUES ($1, $2) RETURNING *'
+      'INSERT INTO comments (comment, recipe_id) VALUES ($1, $2) RETURNING *',
       [comment, id]
     );
     res.status(201).json(result.rows[0]);
