@@ -15,6 +15,9 @@ const searchQueryInput = document.getElementById('searchQuery');
 const recipeCategory = document.getElementById('recipeCategory');
 const detailLikeBtn = document.getElementById('detailLikeBtn');
 const detailLikeCount = document.getElementById('detailLikeCount');
+const askGeminiBtn = document.getElementById('askGeminiBtn');
+const geminiSuggestionsArea = document.getElementById('geminiSuggestionsArea');
+const geminiSuggestionsContent = document.getElementById('geminiSuggestionsContent');
 
 // --- グローバル変数 ---
 let editingId = null; // 編集中のレシピID
@@ -252,6 +255,83 @@ function setupEventListeners() {
         displayRecipes();
       })
       .catch(() => showStatus('いいねに失敗しました', true));
+  });
+
+  askGeminiBtn.addEventListener('click', async () => {
+    if (currentRecipeId === null) {
+      showStatus('レシピが選択されていません。', true);
+      return;
+    }
+
+    const selectedRecipe = allRecipes.find(r => r.id == currentRecipeId);
+    if (!selectedRecipe) {
+      showStatus('選択されたレシピが見つかりません。', true);
+      return;
+    }
+
+    askGeminiBtn.disabled = true;
+    showStatus('おすすめの組み合わせを生成中...', false);
+    geminiSuggestionsArea.style.display = 'none'; // Hide previous suggestions
+    geminiSuggestionsContent.innerHTML = ''; // Clear previous suggestions
+
+    try {
+      const recipeListText = allRecipes.map(r => `- ${r.title} (カテゴリー: ${r.category || '未分類'})`).join('\n');
+
+      const prompt = `## 指示\n選択中となっているレシピが主食・主菜・副菜・汁物・デザートのいずれかを判定し、選択中のもの以外に合うレシピをレシピリストから提示してください。\n例）選択中のレシピ：チャーハンの場合\nカテゴリー：主食\n主菜：XXXX // レシピリストから選択（レシピリストに合うものがないときは該当なしと表示）\n副菜：XXXX // レシピリストから選択（レシピリストに合うものがないときは該当なしと表示）\n汁物：XXXX\nデザート：XXXX\n\n## 選択中\n${selectedRecipe.title}\n\n## レシピリスト\n${recipeListText}`;
+
+      const response = await fetch('/api/gemini-suggest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const geminiText = data.suggestion;
+
+      // Parse Gemini's response
+      const categories = ['主食', '主菜', '副菜', '汁物', 'デザート'];
+      const suggestions = {};
+      let currentCategory = '';
+
+      geminiText.split('\n').forEach(line => {
+        const trimmedLine = line.trim();
+        if (trimmedLine.startsWith('カテゴリー：')) {
+          // Ignore the category of the selected recipe
+        } else {
+          const parts = trimmedLine.split('：');
+          if (parts.length >= 2) {
+            const category = parts[0].trim();
+            const recipeName = parts.slice(1).join('：').trim().replace(/\s*\/\/.*$/, ''); // Remove comments
+            if (categories.includes(category)) {
+              suggestions[category] = recipeName;
+            }
+          }
+        }
+      });
+
+      // Display suggestions
+      categories.forEach(cat => {
+        const card = document.createElement('div');
+        card.classList.add('suggestion-card');
+        card.innerHTML = `<h3>${cat}</h3><p>${suggestions[cat] || '該当なし'}</p>`;
+        geminiSuggestionsContent.appendChild(card);
+      });
+
+      geminiSuggestionsArea.style.display = 'block';
+      showStatus('おすすめの組み合わせを生成しました！');
+
+    } catch (error) {
+      console.error('Gemini API Error:', error);
+      showStatus('おすすめの組み合わせの生成に失敗しました。', true);
+    } finally {
+      askGeminiBtn.disabled = false;
+    }
   });
 
   document.getElementById('postCommentBtn').addEventListener('click', () => {

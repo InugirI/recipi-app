@@ -65,7 +65,17 @@
           <div class="detail-actions">
             <button id="detailLikeBtn" class="btn">いいね！</button>
             <span id="detailLikeCount"></span>
+            <button id="askGeminiBtn" class="btn">組み合わせを聞く</button>
           </div>
+        </div>
+
+        <!-- Gemini API 提案表示エリア（最初は非表示） -->
+        <div id="geminiSuggestionsArea" style="display:none;">
+          <h2>おすすめの組み合わせ</h2>
+          <div id="geminiSuggestionsContent">
+            <!-- Gemini API からの提案がここに表示される -->
+          </div>
+        </div>
           <div id="commentsArea">
             <h3>コメント</h3>
             <div id="commentsList"></div>

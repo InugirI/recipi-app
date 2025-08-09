@@ -5,6 +5,14 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { Pool } = require('pg');
+require('dotenv').config(); // Load environment variables
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+// Access your API key as an environment variable (see "Set up your API key" above)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// For text-only input, use the gemini-pro model
+const model = genAI.getGenerativeModel({ model: "gemini-pro"});
 
 // IMPORTANT: In a real production app, use environment variables for connection strings.
 // e.g., const connectionString = process.env.DATABASE_URL;
@@ -220,7 +228,7 @@ app.post('/api/recipes/:id/comments', async (req, res) => {
   }
   try {
     const result = await pool.query(
-      'INSERT INTO comments (comment, recipe_id) VALUES ($1, $2) RETURNING *',
+      'INSERT INTO comments (comment, recipe_id) VALUES ($1, $2) RETURNING *'
       [comment, id]
     );
     res.status(201).json(result.rows[0]);
@@ -228,6 +236,31 @@ app.post('/api/recipes/:id/comments', async (req, res) => {
     console.error(error);
     res.status(500).json({ message: 'Failed to add comment' });
   }
+});
+
+// --- Gemini API Endpoint ---
+app.post('/api/gemini-suggest', async (req, res) => {
+  const { prompt } = req.body;
+
+  if (!prompt) {
+    return res.status(400).json({ message: 'Prompt is required' });
+  }
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    res.json({ suggestion: text });
+  } catch (error) {
+    console.error('Error calling Gemini API:', error);
+    res.status(500).json({ message: 'Failed to get suggestion from Gemini API', error: error.message });
+  }
+});
+
+
+// --- ルートとサーバー起動 ---
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../index.html'));
 });
 
 

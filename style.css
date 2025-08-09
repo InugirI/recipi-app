@@ -518,3 +518,45 @@ h1 {
 ::-webkit-scrollbar-thumb:hover {
   background: #5a6fd8;
 }
+
+/* Gemini API 提案エリア */
+#geminiSuggestionsArea {
+  max-width: 600px;
+  margin: 30px auto;
+  background: #fff;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+  animation: slideInUp 0.5s ease-out;
+}
+
+#geminiSuggestionsArea h2 {
+  color: #667eea;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 1.8rem;
+}
+
+#geminiSuggestionsContent {
+  display: grid;
+  gap: 15px;
+}
+
+.suggestion-card {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.suggestion-card h3 {
+  color: #333;
+  font-size: 1.2rem;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.suggestion-card p {
+  color: #555;
+  font-size: 1rem;
+}
