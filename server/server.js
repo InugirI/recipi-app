@@ -5,14 +5,14 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { Pool } = require('pg');
-require('dotenv').config(); // Load environment variables
+require('dotenv').config({ path: path.join(__dirname, '../.env') }); // Load environment variables
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Access your API key as an environment variable (see "Set up your API key" above)
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// For text-only input, use the gemini-pro model
-const model = genAI.getGenerativeModel({ model: "gemini-pro"});
+// For text-only input, use the gemini-1.5-flash model
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
 
 // IMPORTANT: In a real production app, use environment variables for connection strings.
 // e.g., const connectionString = process.env.DATABASE_URL;

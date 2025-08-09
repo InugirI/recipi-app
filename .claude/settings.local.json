@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(taskkill:*)",
+      "Bash(node server.js)"
+    ],
+    "deny": []
+  }
+}
