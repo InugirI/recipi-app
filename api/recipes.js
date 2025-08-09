@@ -32,6 +32,30 @@ export default async function handler(req, res) {
         stack: error.stack 
       });
     }
+  } else if (req.method === 'POST') {
+    const { title, description, ingredients, category } = req.body;
+    const ingredientsArray = ingredients ? ingredients.split(',').map(s => s.trim()).filter(s => s) : [];
+
+    if (!title || !description) {
+      return res.status(400).json({ message: 'Title and description are required' });
+    }
+
+    try {
+      const catRes = await pool.query('SELECT id FROM categories WHERE name = $1', [category || '未分類']);
+      if (catRes.rows.length === 0) {
+        return res.status(400).json({ message: 'Invalid category' });
+      }
+      const categoryId = catRes.rows[0].id;
+
+      const result = await pool.query(
+        'INSERT INTO recipes (title, description, ingredients, category_id) VALUES ($1, $2, $3, $4) RETURNING *',
+        [title, description, ingredientsArray, categoryId]
+      );
+      res.status(201).json(result.rows[0]);
+    } catch (error) {
+      console.error('Database error:', error);
+      res.status(500).json({ message: 'Failed to create recipe', error: error.message });
+    }
   } else {
     res.status(405).json({ message: 'Method not allowed' });
   }

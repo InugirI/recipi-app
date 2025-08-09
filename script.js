@@ -338,7 +338,7 @@ function setupEventListeners() {
     const commentInput = document.getElementById('commentInput');
     const comment = commentInput.value.trim();
     if (comment && currentRecipeId !== null) {
-      fetch(`/api/recipes/${currentRecipeId}/comments`, {
+      fetch(`/api/comments?recipeId=${currentRecipeId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ comment })
@@ -382,7 +382,7 @@ function debounce(fn, wait) {
 }
 
 function loadComments(recipeId) {
-  fetch(`/api/recipes/${recipeId}/comments`)
+  fetch(`/api/comments?recipeId=${recipeId}`)
     .then(response => response.json())
     .then(comments => {
       const commentsList = document.getElementById('commentsList');

@@ -4,7 +4,8 @@
       "Bash(taskkill:*)",
       "Bash(node server.js)",
       "Bash(git add:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
