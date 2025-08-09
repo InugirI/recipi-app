@@ -1,0 +1,520 @@
+/* 基本設定 */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Noto Sans JP', 'Yu Gothic', 'Meiryo', sans-serif;
+  background: #fff; /* Change background for the main area */
+  color: #333;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden; /* Prevent body scroll */
+}
+
+/* --- Main Layout --- */
+.main-container {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 250px;
+  background: #f8f9fa;
+  padding: 20px;
+  overflow-y: auto;
+  border-right: 1px solid #dee2e6;
+}
+
+.sidebar h2 {
+  color: #333;
+  font-size: 1.2rem;
+  margin-top: 0;
+  margin-bottom: 10px;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 5px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar ul li a {
+  display: block;
+  padding: 10px 15px;
+  color: #333;
+  text-decoration: none;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.sidebar ul li a:hover,
+.sidebar ul li a.active {
+  background-color: #667eea;
+  color: #fff;
+}
+
+/* --- Sidebar Category List --- */
+.sidebar #categoryList li {
+  padding: 10px 15px;
+  background-color: #e9ecef;
+  border-bottom: 1px solid #dee2e6;
+  cursor: grab;
+  transition: background-color 0.3s;
+}
+
+.sidebar #categoryList li:last-child {
+  border-bottom: none;
+}
+
+.sidebar #categoryList li:hover {
+  background-color: #dde2e6;
+}
+
+.sidebar #categoryList li.sortable-ghost {
+  background: #667eea;
+  opacity: 0.5;
+}
+
+.sidebar #categoryList li.sortable-chosen {
+  cursor: grabbing;
+  background-color: #d1d5f0;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+/* コンテナ */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ヘッダー */
+h1 {
+  text-align: center;
+  color: #333;
+  margin: 20px 0;
+  font-size: 2.5rem;
+  text-shadow: none;
+  animation: fadeInDown 0.8s ease-out;
+}
+
+/* ステータスメッセージ */
+#statusMsg {
+  max-width: 600px;
+  margin: 10px auto;
+  padding: 15px;
+  border-radius: 10px;
+  font-weight: 500;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  animation: slideInDown 0.3s ease-out;
+}
+
+/* 検索エリア */
+#searchArea {
+  max-width: 600px;
+  margin: 20px auto;
+  text-align: center;
+}
+
+#searchQuery {
+  width: 100%;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+#searchQuery:focus {
+  outline: none;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+}
+
+/* 食材入力エリア */
+#myIngredientsArea {
+  max-width: 600px;
+  margin: 20px auto;
+  text-align: center;
+}
+
+#myIngredients {
+  width: 100%;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+#myIngredients:focus {
+  outline: none;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+}
+
+/* ボタン共通スタイル */
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* メインボタン */
+#addRecipeBtn, #suggestBtn {
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: #fff;
+  margin: 10px;
+}
+
+#addRecipeBtn:hover, #suggestBtn:hover {
+  background: linear-gradient(45deg, #5a6fd8, #6a4190);
+}
+
+/* レシピ一覧 */
+#recipeList {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 20px;
+}
+
+/* PC版レイアウト */
+@media (min-width: 768px) {
+  #recipeList {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  }
+  
+  .container {
+    padding: 40px;
+  }
+  
+  h1 {
+    font-size: 3rem;
+  }
+}
+
+/* スマホ版レイアウト */
+@media (max-width: 767px) {
+  #recipeList {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    padding: 0 15px;
+  }
+  
+  .container {
+    padding: 15px;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    margin: 15px 0;
+  }
+  
+  #searchArea, #myIngredientsArea {
+    margin: 15px auto;
+  }
+  
+  #searchQuery, #myIngredients {
+    padding: 10px 15px;
+    font-size: 0.9rem;
+  }
+  
+  .btn {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+}
+
+/* レシピカード */
+#recipeList li {
+  background: #fff;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+#recipeList li:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+
+/* レシピタイトル */
+.recipeTitle {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #667eea;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.recipeTitle:hover {
+  color: #5a6fd8;
+}
+
+/* おすすめマーク */
+#recipeList li span[style*="color:#e67e22"] {
+  background: linear-gradient(45deg, #e67e22, #f39c12);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  display: inline-block;
+  margin-bottom: 10px;
+  animation: pulse 2s infinite;
+}
+
+/* レシピ画像 */
+#recipeList li img {
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* ボタングループ */
+.btn-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+.deleteBtn, .editBtn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.deleteBtn {
+  background: linear-gradient(45deg, #e74c3c, #c0392b);
+  color: #fff;
+}
+
+.editBtn {
+  background: linear-gradient(45deg, #3498db, #2980b9);
+  color: #fff;
+}
+
+.deleteBtn:hover, .editBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* フォーム */
+#addRecipeForm {
+  max-width: 500px;
+  margin: 30px auto;
+  background: #fff;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+  animation: slideInUp 0.5s ease-out;
+}
+
+#addRecipeForm h2 {
+  color: #667eea;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+#addRecipeForm input,
+#addRecipeForm textarea,
+#addRecipeForm select {
+  width: 100%;
+  margin-bottom: 15px;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+#addRecipeForm input:focus,
+#addRecipeForm textarea:focus,
+#addRecipeForm select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+#addRecipeForm textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+/* 詳細表示 */
+#recipeDetail {
+  max-width: 600px;
+  margin: 30px auto;
+  background: #fff;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+  animation: slideInUp 0.5s ease-out;
+}
+
+#detailTitle {
+  color: #667eea;
+  margin-bottom: 15px;
+  font-size: 1.8rem;
+}
+
+.detail-actions {
+  margin-bottom: 15px;
+}
+
+/* コメントエリア */
+#commentsArea {
+  margin-top: 25px;
+  border-top: 2px solid #f0f0f0;
+  padding-top: 20px;
+}
+
+#commentsArea h3 {
+  color: #667eea;
+  margin-bottom: 15px;
+}
+
+#commentForm {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+#commentInput {
+  flex: 1;
+  padding: 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 20px;
+  font-size: 0.9rem;
+}
+
+#commentInput:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+#postCommentBtn {
+  padding: 10px 20px;
+  background: linear-gradient(45deg, #27ae60, #2ecc71);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#postCommentBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* アニメーション */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* ローディング状態 */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* スクロールバー */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5a6fd8;
+}

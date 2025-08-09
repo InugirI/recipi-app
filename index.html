@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>レシピアプリ</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="main-container">
+    <aside class="sidebar">
+      <h2>検索モード</h2>
+      <ul id="searchModeList">
+        <li><a href="#" class="search-mode active" data-mode="all">すべてから検索</a></li>
+        <li><a href="#" class="search-mode" data-mode="nameDesc">レシピ名・説明から検索</a></li>
+        <li><a href="#" class="search-mode" data-mode="ingredients">材料から検索</a></li>
+      </ul>
+      <h2 style="margin-top: 30px;">カテゴリー</h2>
+      <ul id="categoryList">
+        <!-- カテゴリーがここに表示される -->
+      </ul>
+    </aside>
+
+    <main class="content">
+      <div class="container">
+        <h1>レシピ一覧</h1>
+        <div id="statusMsg"></div>
+
+        <!-- 検索エリア -->
+        <div id="searchArea">
+          <input type="text" id="searchQuery" placeholder="キーワード検索...">
+        </div>
+
+        <div id="myIngredientsArea">
+          <input type="text" id="myIngredients" placeholder="家にある食材（カンマ区切りで入力）">
+          <button id="suggestBtn" class="btn">おすすめレシピを表示</button>
+        </div>
+        
+        <button id="addRecipeBtn" class="btn">新しいレシピを追加</button>
+        
+        <ul id="recipeList">
+          <!-- レシピ一覧がここに表示される -->
+        </ul>
+
+        <!-- レシピ追加フォーム（最初は非表示） -->
+        <div id="addRecipeForm" style="display:none;">
+          <h2>新しいレシピを追加</h2>
+          <input type="text" id="recipeTitle" placeholder="レシピ名">
+          <select id="recipeCategory"></select>
+          <input type="text" id="recipeIngredients" placeholder="材料（カンマ区切りで入力）">
+          <textarea id="recipeDescription" placeholder="説明"></textarea>
+          <input type="file" id="recipeImage" accept="image/*">
+           <img id="imagePreview" style="display:none; max-width:200px; margin:10px 0; border-radius:10px;" alt="プレビュー">
+          <div class="btn-group">
+            <button id="saveRecipeBtn" class="btn">保存</button>
+            <button id="cancelBtn" class="btn">キャンセル</button>
+          </div>
+        </div>
+
+        <!-- レシピ詳細表示エリア（最初は非表示） -->
+        <div id="recipeDetail" style="display:none;">
+          <h2 id="detailTitle"></h2>
+          <p id="detailDescription"></p>
+          <div class="detail-actions">
+            <button id="detailLikeBtn" class="btn">いいね！</button>
+            <span id="detailLikeCount"></span>
+          </div>
+          <div id="commentsArea">
+            <h3>コメント</h3>
+            <div id="commentsList"></div>
+            <div id="commentForm">
+              <input type="text" id="commentInput" placeholder="コメントを入力">
+              <button id="postCommentBtn">投稿</button>
+            </div>
+          </div>
+          <button id="closeDetailBtn" class="btn">閉じる</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
